@@ -15,6 +15,7 @@ const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
 const API_COHERE = 'https://api.cohere.ai/v1';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
+const API_PREM = 'https://app.premai.io/v1';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -639,6 +640,76 @@ async function sendCohereRequest(request, response) {
     }
 }
 
+async function sendPremRequest(request, response) {
+    const apiUrl = API_PREM
+    const apiKey = readSecret(SECRET_KEYS.PREM);
+    const divider = '-'.repeat(process.stdout.columns);
+
+    if (!apiKey) {
+        console.log(color.red(`Prem API key is missing.\n${divider}`));
+        return response.status(400).send({ error: true });
+    }
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+        let use_system_prompt = true;
+        let converted_prompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, use_system_prompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
+
+        const requestBody = {
+            project_id: request.body.project_id,
+            messages: converted_prompt.messages,
+            model: request.body.model,
+            max_tokens: request.body.max_tokens,
+            temperature: request.body.temperature,
+            top_p: request.body.top_p,
+            presence_penalty: request.body.presence_penalty,
+            frequency_penalty: request.body.frequency_penalty,
+            stream: request.body.stream,
+            system_prompt: converted_prompt.systemPrompt,
+        };
+        
+        console.log('Prem request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+            timeout: 0,
+        })
+
+        if (request.body.stream) {
+            // Pipe remote SSE stream to Express response
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                console.log(color.red(`Prem API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${await generateResponse.text()}\n${divider}`));
+                return response.status(generateResponse.status).send({ error: true });
+            }
+
+            const generateResponseJson = await generateResponse.json();
+            const responseText = generateResponseJson.choices[0].message.content;
+            console.log('Prem response:', generateResponseJson);
+
+            // Wrap it back to OAI format
+            const reply = { choices: [{ 'message': { 'content': responseText } }] };
+            return response.send(reply);
+        }
+    } catch (error) {
+        console.log(color.red(`Error communicating with Prem: ${error}\n${divider}`));
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
+}
+
 const router = express.Router();
 
 router.post('/status', jsonParser, async function (request, response_getstatus_openai) {
@@ -669,6 +740,10 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
         api_url = API_COHERE;
         api_key_openai = readSecret(SECRET_KEYS.COHERE);
+        headers = {};
+    }else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PREM) {
+        api_url = API_PREM;
+        api_key_openai = readSecret(SECRET_KEYS.PREM);
         headers = {};
     } else {
         console.log('This chat completion source is not supported yet.');
@@ -823,6 +898,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.PREM: return sendPremRequest(request, response);
     }
 
     let apiUrl;

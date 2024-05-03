@@ -173,6 +173,7 @@ export const chat_completion_sources = {
     CUSTOM: 'custom',
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
+    PREM: 'prem',
 };
 
 const character_names_behavior = {
@@ -216,6 +217,7 @@ const default_settings = {
     repetition_penalty_openai: 1,
     stream_openai: false,
     websearch_cohere: false,
+    project_id_prem: '',
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
@@ -240,6 +242,7 @@ const default_settings = {
     mistralai_model: 'mistral-medium-latest',
     cohere_model: 'command-r',
     perplexity_model: 'llama-3-70b-instruct',
+    prem_model: 'claude-3-haiku',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -289,6 +292,7 @@ const oai_settings = {
     repetition_penalty_openai: 1,
     stream_openai: false,
     websearch_cohere: false,
+    project_id_prem: 0,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
@@ -313,6 +317,7 @@ const oai_settings = {
     mistralai_model: 'mistral-medium-latest',
     cohere_model: 'command-r',
     perplexity_model: 'llama-3-70b-instruct',
+    prem_model: 'claude-3-haiku',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1415,6 +1420,8 @@ function getChatCompletionModel() {
             return oai_settings.cohere_model;
         case chat_completion_sources.PERPLEXITY:
             return oai_settings.perplexity_model;
+        case chat_completion_sources.PREM:
+            return oai_settings.prem_model;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -1636,6 +1643,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isCustom = oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
     const isCohere = oai_settings.chat_completion_source == chat_completion_sources.COHERE;
     const isPerplexity = oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
+    const isPrem = oai_settings.chat_completion_source == chat_completion_sources.PREM;
     const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -1791,6 +1799,14 @@ async function sendOpenAIRequest(type, messages, signal) {
 
         // YEAH BRO JUST USE OPENAI CLIENT BRO
         delete generate_data['stop'];
+    }
+    
+    if (isPrem) {
+        // Don't add a prefill on quiet gens (summarization)
+        if (!isQuiet) {
+            generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
+        }
+        generate_data['project_id'] = oai_settings.project_id_prem;
     }
 
     if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere) && oai_settings.seed >= 0) {
@@ -2639,6 +2655,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.repetition_penalty_openai = settings.repetition_penalty_openai ?? default_settings.repetition_penalty_openai;
     oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
     oai_settings.websearch_cohere = settings.websearch_cohere ?? default_settings.websearch_cohere;
+    oai_settings.project_id_prem = settings.project_id_prem ?? default_settings.project_id_prem;
     oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
@@ -2660,6 +2677,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
     oai_settings.cohere_model = settings.cohere_model ?? default_settings.cohere_model;
     oai_settings.perplexity_model = settings.perplexity_model ?? default_settings.perplexity_model;
+    oai_settings.prem_model = settings.prem_model ?? default_settings.prem_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -2704,6 +2722,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#websearch_toggle').prop('checked', oai_settings.websearch_cohere);
+    $('#project_id_prem').val(oai_settings.project_id_prem);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
@@ -2727,6 +2746,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_cohere_select option[value="${oai_settings.cohere_model}"`).attr('selected', true);
     $('#model_perplexity_select').val(oai_settings.perplexity_model);
     $(`#model_perplexity_select option[value="${oai_settings.perplexity_model}"`).attr('selected', true);
+    $('#model_prem_select').val(oai_settings.prem_model);
+    $(`#model_prem_select option[value="${oai_settings.prem_model}"`).attr('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#openai_max_context').val(oai_settings.openai_max_context);
@@ -2968,6 +2989,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         mistralai_model: settings.mistralai_model,
         cohere_model: settings.cohere_model,
         perplexity_model: settings.perplexity_model,
+        prem_model: settings.prem_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
@@ -3006,6 +3028,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         group_nudge_prompt: settings.group_nudge_prompt,
         stream_openai: settings.stream_openai,
         websearch_cohere: settings.websearch_cohere,
+        project_id_prem: settings.project_id_prem,
         prompts: settings.prompts,
         prompt_order: settings.prompt_order,
         api_url_scale: settings.api_url_scale,
@@ -3361,6 +3384,7 @@ function onSettingsPresetChange() {
         mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
         cohere_model: ['#model_cohere_select', 'cohere_model', false],
         perplexity_model: ['#model_perplexity_select', 'perplexity_model', false],
+        prem_model: ['#model_prem_select', 'prem_model', false],
         custom_model: ['#custom_model_id', 'custom_model', false],
         custom_url: ['#custom_api_url_text', 'custom_url', false],
         custom_include_body: ['#custom_include_body', 'custom_include_body', false],
@@ -3386,6 +3410,7 @@ function onSettingsPresetChange() {
         group_nudge_prompt: ['#group_nudge_prompt_textarea', 'group_nudge_prompt', false],
         stream_openai: ['#stream_toggle', 'stream_openai', true],
         websearch_cohere: ['#websearch_toggle', 'websearch_cohere', true],
+        project_id_prem: ['#project_id_prem', 'project_id_prem', false],
         prompts: ['', 'prompts', false],
         prompt_order: ['', 'prompt_order', false],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
@@ -3589,6 +3614,11 @@ async function onModelChange() {
         oai_settings.perplexity_model = value;
     }
 
+    if ($(this).is('#model_prem_select')) {
+        console.log('Prem model changed to', value);
+        oai_settings.prem_model = value;
+    }
+
     if (value && $(this).is('#model_custom_select')) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
@@ -3752,6 +3782,15 @@ async function onModelChange() {
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.PREM) {
+        $('#openai_max_context').attr('max', max_200k);
+        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
@@ -3973,6 +4012,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.PREM) {
+        const api_key_prem = String($('#api_key_prem').val()).trim();
+
+        if (api_key_prem.length) {
+            await writeSecret(SECRET_KEYS.PREM, api_key_prem);
+        }
+
+        if (!secret_state[SECRET_KEYS.PREM]) {
+            console.log('No secret key saved for Prem');
+            return;
+        }
+    }
+
     startStatusLoading();
     saveSettingsDebounced();
     await getStatusOpen();
@@ -4013,6 +4065,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
         $('#model_perplexity_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.PREM) {
+        $('#model_prem_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
         $('#model_custom_select').trigger('change');
@@ -4355,6 +4410,11 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
+    $('#project_id_prem').on('input', function () {
+        oai_settings.project_id_prem = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#wrap_in_quotes').on('change', function () {
         oai_settings.wrap_in_quotes = !!$('#wrap_in_quotes').prop('checked');
         saveSettingsDebounced();
@@ -4684,6 +4744,7 @@ $(document).ready(async function () {
     $('#model_mistralai_select').on('change', onModelChange);
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
+    $('#model_prem_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);

@@ -8257,6 +8257,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.PERPLEXITY,
     },
+    'prem': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.PREM,
+    },
     'infermaticai': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',

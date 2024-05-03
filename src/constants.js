@@ -164,6 +164,7 @@ const CHAT_COMPLETION_SOURCES = {
     CUSTOM: 'custom',
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
+    PREM: 'prem',
 };
 
 const UPLOADS_PATH = './uploads';

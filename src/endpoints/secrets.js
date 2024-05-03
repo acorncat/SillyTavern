@@ -37,6 +37,7 @@ const SECRET_KEYS = {
     LLAMACPP: 'api_key_llamacpp',
     COHERE: 'api_key_cohere',
     PERPLEXITY: 'api_key_perplexity',
+    PREM: 'api_key_prem',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false

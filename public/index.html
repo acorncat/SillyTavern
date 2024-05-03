@@ -470,7 +470,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,prem">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -483,7 +483,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,prem">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -496,7 +496,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,prem">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -535,7 +535,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,prem">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -2309,6 +2309,7 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="scale">Scale</option>
                                 <option value="windowai">Window AI</option>
+                                <option value="prem">Prem</option>
                             </optgroup>
                         </select>
                         <div data-newbie-hidden class="inline-drawer wide100p" data-source="openai,claude,mistralai">
@@ -2753,6 +2754,30 @@
                                     <optgroup label="Nightly">
                                         <option value="command-light-nightly">command-light-nightly</option>
                                         <option value="command-nightly">command-nightly</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </form>
+                        <form id="prem_form" data-source="prem" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="Prem API Key">Prem API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_prem" name="api_key_prem" class="text_pole flex1" maxlength="5000" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_prem"></div>
+                            </div>
+                            <div data-for="api_key_prem" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4 data-i18n="Project ID">Project ID</h4>
+                            <div class="flex-container">
+                                <input id="project_id_prem" name="project_id_prem" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                            </div>
+                            <div>
+                                <h4 data-i18n="Prem Model">Prem Model</h4>
+                                <select id="model_prem_select">
+                                    <optgroup label="Claude">
+                                        <option value="claude-3-haiku">claude-3-haiku</option>
+                                        <option value="claude-3-opus">claude-3-opus</option>
+                                        <option value="claude-3-sonnet">claude-3-sonnet</option>
                                     </optgroup>
                                 </select>
                             </div>
