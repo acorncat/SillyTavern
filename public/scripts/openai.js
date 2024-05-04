@@ -1802,6 +1802,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
     
     if (isPrem) {
+        generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
         if (!isQuiet) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
